@@ -2,13 +2,13 @@ version: 0.2
 
 env:
   variables:
-    ACCOUNT_ID: "418295691381"
+    ACCOUNT_ID: "713881797197"
     REGION: "us-east-1"
     REPO_NAME: "ecommerce-ecr"
     IMAGE_TAG: "latest"
-    SONAR_PROJECT_KEY: "capstone_project"
-    SONAR_HOST_URL: "http://3.87.231.29"
-    SONAR_TOKEN: "sqp_38e05e8190e0253e620e2cc260bb3af31965a105"
+    SONAR_PROJECT_KEY: "capstone-project"
+    SONAR_HOST_URL: "http://34.205.76.160"
+    SONAR_TOKEN: "sqp_8aed92df03ce943bee02e05a373650103be72daa"
 
 phases:
   install:
@@ -30,7 +30,8 @@ phases:
       - export PATH=$PATH:$(pwd)/sonar-scanner/bin
 
       - echo Running SonarQube analysis...
-      - sonar-scanner \
+      - |
+        sonar-scanner \
           -Dsonar.projectKey=$SONAR_PROJECT_KEY \
           -Dsonar.sources=. \
           -Dsonar.host.url=$SONAR_HOST_URL \
