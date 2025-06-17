@@ -7,19 +7,25 @@ phases:
     commands:
       - echo Installing Node.js dependencies...
       - npm install
+
       - echo Installing SonarScanner...
       - curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
       - unzip sonar-scanner.zip
-      - export PATH=$PATH:$(pwd)/sonar-scanner-*/bin
+      - export SONAR_SCANNER_HOME=$(pwd)/sonar-scanner-5.0.1.3006-linux
+      - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+      - sonar-scanner --version
 
   pre_build:
     commands:
       - echo Running SonarQube Analysis...
+      - export SONAR_SCANNER_HOME=$(pwd)/sonar-scanner-5.0.1.3006-linux
+      - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
       - sonar-scanner \
           -Dsonar.projectKey=capstone_project \
           -Dsonar.sources=. \
           -Dsonar.host.url=http://3.87.231.29 \
           -Dsonar.login=sqp_38e05e8190e0253e620e2cc260bb3af31965a105
+
       - echo Logging in to Amazon ECR...
       - ACCOUNT_ID=418295691381
       - REGION=us-east-1
