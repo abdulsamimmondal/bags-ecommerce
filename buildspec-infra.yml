@@ -1,0 +1,66 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.x
+    commands:
+      - pip install --upgrade awscli
+
+  build:
+    commands:
+      - echo Starting multi-region EKS deployment...
+
+      # Common values
+      - STACK_PREFIX=ecommerce
+      - TEMPLATE_DIR=infra
+      - REGIONS=("us-east-1" "us-west-2")
+
+      - for REGION in "${REGIONS[@]}"; do
+          echo "Deploying VPC in $REGION...";
+          aws cloudformation deploy \
+            --region $REGION \
+            --stack-name ${STACK_PREFIX}-vpc \
+            --template-file $TEMPLATE_DIR/vpc.yaml \
+            --capabilities CAPABILITY_NAMED_IAM;
+
+          VPC_ID=$(aws cloudformation describe-stacks \
+            --region $REGION \
+            --stack-name ${STACK_PREFIX}-vpc \
+            --query "Stacks[0].Outputs[?OutputKey=='VpcId'].OutputValue" --output text);
+
+          SUBNET_IDS=$(aws cloudformation describe-stacks \
+            --region $REGION \
+            --stack-name ${STACK_PREFIX}-vpc \
+            --query "Stacks[0].Outputs[?OutputKey=='SubnetIds'].OutputValue" --output text);
+
+          echo "Deploying EKS cluster in $REGION...";
+          aws cloudformation deploy \
+            --region $REGION \
+            --stack-name ${STACK_PREFIX}-eks \
+            --template-file $TEMPLATE_DIR/eks-cluster.yaml \
+            --parameter-overrides VpcId=$VPC_ID SubnetIds=$SUBNET_IDS \
+            --capabilities CAPABILITY_NAMED_IAM;
+
+          CLUSTER_ROLE_ARN=$(aws cloudformation describe-stacks \
+            --region $REGION \
+            --stack-name ${STACK_PREFIX}-eks \
+            --query "Stacks[0].Outputs[?OutputKey=='ClusterRoleArn'].OutputValue" --output text);
+
+          CLUSTER_NAME=$(aws cloudformation describe-stacks \
+            --region $REGION \
+            --stack-name ${STACK_PREFIX}-eks \
+            --query "Stacks[0].Outputs[?OutputKey=='ClusterName'].OutputValue" --output text);
+
+          echo "Deploying node group in $REGION...";
+          aws cloudformation deploy \
+            --region $REGION \
+            --stack-name ${STACK_PREFIX}-nodegroup \
+            --template-file $TEMPLATE_DIR/nodegroup.yaml \
+            --parameter-overrides ClusterName=$CLUSTER_NAME SubnetIds=$SUBNET_IDS ClusterRoleArn=$CLUSTER_ROLE_ARN \
+            --capabilities CAPABILITY_NAMED_IAM;
+        done
+
+artifacts:
+  files:
+    - '**/*'
