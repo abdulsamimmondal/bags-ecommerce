@@ -1,5 +1,15 @@
 version: 0.2
 
+env:
+  variables:
+    ACCOUNT_ID: "418295691381"
+    REGION: "us-east-1"
+    REPO_NAME: "ecommerce-ecr"
+    IMAGE_TAG: "latest"
+    SONAR_PROJECT_KEY: "capstone_project"
+    SONAR_HOST_URL: "http://3.87.231.29"
+    SONAR_TOKEN: "sqp_38e05e8190e0253e620e2cc260bb3af31965a105"
+
 phases:
   install:
     runtime-versions:
@@ -8,27 +18,25 @@ phases:
       - echo Installing Node.js dependencies...
       - npm install
 
-      - echo Downloading SonarScanner...
-      - curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-4.8.0.2856-linux.zip
+      - echo Installing SonarScanner CLI...
+      - curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
       - unzip sonar-scanner.zip
-      - export PATH=$PWD/sonar-scanner-4.8.0.2856-linux/bin:$PATH
-      - sonar-scanner --version || echo "SonarScanner installed."
+      - mv sonar-scanner-* sonar-scanner
+      - export PATH=$PATH:$(pwd)/sonar-scanner/bin
 
   pre_build:
     commands:
-      - echo Running SonarQube Analysis...
-      - export PATH=$PWD/sonar-scanner-4.8.0.2856-linux/bin:$PATH
+      - echo Adding SonarScanner to PATH...
+      - export PATH=$PATH:$(pwd)/sonar-scanner/bin
+
+      - echo Running SonarQube analysis...
       - sonar-scanner \
-          -Dsonar.projectKey=capstone_project \
+          -Dsonar.projectKey=$SONAR_PROJECT_KEY \
           -Dsonar.sources=. \
-          -Dsonar.host.url=http://3.87.231.29 \
-          -Dsonar.login=sqp_38e05e8190e0253e620e2cc260bb3af31965a105
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN
 
       - echo Logging in to Amazon ECR...
-      - ACCOUNT_ID=418295691381
-      - REGION=us-east-1
-      - REPO_NAME=ecommerce-ecr
-      - IMAGE_TAG=latest
       - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
 
   build:
@@ -39,13 +47,21 @@ phases:
 
   post_build:
     commands:
+      - set -e
       - echo Pushing Docker image to Amazon ECR...
       - docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}
+
       - echo Creating final deployment files...
       - mkdir -p k8s-out
+      - echo "--- Checking k8s directory structure ---"
+      - ls -l k8s
+
       - sed "s|IMAGE_PLACEHOLDER|${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}|g" k8s/deployment.yaml > k8s-out/deployment.yaml
-      - cp k8s/service.yaml k8s-out/
-      - cp k8s/mongodb-*.yaml k8s-out/
+      - cp k8s/service.yaml k8s-out/service.yaml
+      - cp k8s/mongodb-deployment.yaml k8s-out/mongodb-deployment.yaml
+      - cp k8s/mongodb-service.yaml k8s-out/mongodb-service.yaml
+
+      - echo "--- Contents of k8s-out ---"
       - ls -R k8s-out
 
 artifacts:
