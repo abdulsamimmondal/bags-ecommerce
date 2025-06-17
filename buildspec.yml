@@ -1,10 +1,5 @@
 version: 0.2
 
-env:
-  variables:
-    SONAR_SCANNER_VERSION: "4.8.0.2856"
-    SONAR_SCANNER_DIR: "sonar-scanner-${SONAR_SCANNER_VERSION}-linux"
-
 phases:
   install:
     runtime-versions:
@@ -14,17 +9,15 @@ phases:
       - npm install
 
       - echo Downloading SonarScanner...
-      - curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${SONAR_SCANNER_DIR}.zip
+      - curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-4.8.0.2856-linux.zip
       - unzip sonar-scanner.zip
-      - export PATH=$PWD/${SONAR_SCANNER_DIR}/bin:$PATH
+      - export PATH=$PWD/sonar-scanner-4.8.0.2856-linux/bin:$PATH
       - sonar-scanner --version || echo "SonarScanner installed."
 
   pre_build:
     commands:
-      - echo Setting up PATH for SonarScanner...
-      - export PATH=$PWD/${SONAR_SCANNER_DIR}/bin:$PATH
-
       - echo Running SonarQube Analysis...
+      - export PATH=$PWD/sonar-scanner-4.8.0.2856-linux/bin:$PATH
       - sonar-scanner \
           -Dsonar.projectKey=capstone_project \
           -Dsonar.sources=. \
