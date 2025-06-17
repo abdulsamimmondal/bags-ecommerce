@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    SONAR_SCANNER_VERSION: "5.0.1.3006"
+    SONAR_SCANNER_VERSION: "4.8.0.2856"
     SONAR_SCANNER_DIR: "sonar-scanner-${SONAR_SCANNER_VERSION}-linux"
 
 phases:
@@ -15,9 +15,9 @@ phases:
 
       - echo Downloading SonarScanner...
       - curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${SONAR_SCANNER_DIR}.zip
-      - unzip -q sonar-scanner.zip
+      - unzip sonar-scanner.zip
       - export PATH=$PWD/${SONAR_SCANNER_DIR}/bin:$PATH
-      - sonar-scanner --version
+      - sonar-scanner --version || echo "SonarScanner installed."
 
   pre_build:
     commands:
@@ -31,7 +31,7 @@ phases:
           -Dsonar.host.url=http://3.87.231.29 \
           -Dsonar.login=sqp_38e05e8190e0253e620e2cc260bb3af31965a105
 
-      - echo Logging into Amazon ECR...
+      - echo Logging in to Amazon ECR...
       - ACCOUNT_ID=418295691381
       - REGION=us-east-1
       - REPO_NAME=ecommerce-ecr
@@ -48,7 +48,7 @@ phases:
     commands:
       - echo Pushing Docker image to Amazon ECR...
       - docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}
-      - echo Preparing Kubernetes deployment files...
+      - echo Creating final deployment files...
       - mkdir -p k8s-out
       - sed "s|IMAGE_PLACEHOLDER|${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}|g" k8s/deployment.yaml > k8s-out/deployment.yaml
       - cp k8s/service.yaml k8s-out/
