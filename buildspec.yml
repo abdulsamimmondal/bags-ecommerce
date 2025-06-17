@@ -12,14 +12,18 @@ phases:
       - curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
       - unzip sonar-scanner.zip
       - export SONAR_SCANNER_HOME=$(pwd)/sonar-scanner-5.0.1.3006-linux
+      - echo "export SONAR_SCANNER_HOME=$SONAR_SCANNER_HOME" >> ~/.bashrc
+      - echo 'export PATH=$SONAR_SCANNER_HOME/bin:$PATH' >> ~/.bashrc
       - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
       - sonar-scanner --version
 
   pre_build:
     commands:
-      - echo Running SonarQube Analysis...
+      - echo Setting SonarScanner path...
       - export SONAR_SCANNER_HOME=$(pwd)/sonar-scanner-5.0.1.3006-linux
       - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+
+      - echo Running SonarQube Analysis...
       - sonar-scanner \
           -Dsonar.projectKey=capstone_project \
           -Dsonar.sources=. \
